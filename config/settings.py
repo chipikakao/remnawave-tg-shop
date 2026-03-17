@@ -6,6 +6,7 @@ from typing import Optional, List, Dict, Any
 
 class Settings(BaseSettings):
     BOT_TOKEN: str
+    TELEGRAM_PROXY_URL: Optional[str] = None
     ADMIN_IDS_STR: str = Field(
         default="",
         alias="ADMIN_IDS",
@@ -636,6 +637,7 @@ class Settings(BaseSettings):
         'CRYPT4_REDIRECT_URL',
         'TELEGRAM_WEBHOOK_SECRET',
         'PANEL_WEBHOOK_SECRET',
+        'TELEGRAM_PROXY_URL',
         mode='before',
     )
     @classmethod
