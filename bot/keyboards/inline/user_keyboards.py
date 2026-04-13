@@ -16,7 +16,7 @@ def get_main_menu_inline_keyboard(
     if show_trial_button and settings.TRIAL_ENABLED:
         builder.row(
             InlineKeyboardButton(text=_(key="menu_activate_trial_button"),
-                                 callback_data="main_action:request_trial"))
+                                 callback_data="main_action:request_trial",style="success"))
 
     builder.row(
         InlineKeyboardButton(text=_(key="menu_subscribe_inline"),
