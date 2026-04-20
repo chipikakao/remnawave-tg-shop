@@ -38,12 +38,25 @@ async def build_and_start_web_app(
         if hasattr(dp, "workflow_data") and key in dp.workflow_data:  # type: ignore
             app[key] = dp.workflow_data[key]  # type: ignore
 
-    setup_application(app, dp, bot=bot)
+    # setup_application wires aiohttp lifecycle to dispatcher startup/shutdown for Telegram
+    # webhook. With TELEGRAM_USE_POLLING, start_polling owns that lifecycle — avoid double
+    # emit_startup if both were registered.
+    telegram_updates_via_webhook = bool(settings.WEBHOOK_BASE_URL) and (
+        not settings.TELEGRAM_USE_POLLING
+    )
+    if telegram_updates_via_webhook:
+        setup_application(app, dp, bot=bot)
+    else:
+        logging.info(
+            "Telegram polling mode: aiohttp skips setup_application; payment routes only."
+        )
 
-    telegram_uses_webhook_mode = bool(settings.WEBHOOK_BASE_URL)
+    #telegram_uses_webhook_mode = bool(settings.WEBHOOK_BASE_URL)
+    telegram_webhook_secret = (settings.TELEGRAM_WEBHOOK_SECRET or "").strip() or None
     telegram_webhook_secret = (settings.TELEGRAM_WEBHOOK_SECRET or "").strip() or None
 
-    if telegram_uses_webhook_mode:
+    #if telegram_uses_webhook_mode:
+    if telegram_updates_via_webhook:
         telegram_webhook_path = settings.telegram_webhook_path
         app.router.add_post(
             telegram_webhook_path,
@@ -96,6 +109,13 @@ async def build_and_start_web_app(
     if panel_path.startswith("/"):
         app.router.add_post(panel_path, panel_webhook_route)
         logging.info(f"Panel webhook route configured at: [POST] {panel_path}")
+
+    bind_gate = dp.get("payment_http_bind_event")
+    if bind_gate is not None:
+        logging.info(
+            "Waiting for Telegram polling dispatcher startup before binding HTTP server..."
+        )
+        await bind_gate.wait()
 
     web_app_runner = web.AppRunner(app)
     await web_app_runner.setup()

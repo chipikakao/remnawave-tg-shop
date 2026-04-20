@@ -94,6 +94,13 @@ class Settings(BaseSettings):
         default=None,
         description="Secret token for Telegram webhook header validation",
     )
+    TELEGRAM_USE_POLLING: bool = Field(
+        default=False,
+        description=(
+            "When true, receive Telegram updates via long polling; WEBHOOK_BASE_URL "
+            "still required for payment/panel HTTP webhooks on the aiohttp server."
+        ),
+    )
 
     CRYPTOPAY_TOKEN: Optional[str] = None
     CRYPTOPAY_NETWORK: str = Field(default="mainnet")
@@ -717,9 +724,15 @@ def get_settings() -> Settings:
                 logging.warning(
                     "CRITICAL: PANEL_API_URL is not set. Panel integration will not work."
                 )
-            if _settings_instance.WEBHOOK_BASE_URL and not _settings_instance.TELEGRAM_WEBHOOK_SECRET:
+            #if _settings_instance.WEBHOOK_BASE_URL and not _settings_instance.TELEGRAM_WEBHOOK_SECRET:
+            if (
+                _settings_instance.WEBHOOK_BASE_URL
+                and not _settings_instance.TELEGRAM_USE_POLLING
+                and not _settings_instance.TELEGRAM_WEBHOOK_SECRET
+            ):
                 logging.warning(
-                    "WARNING: TELEGRAM_WEBHOOK_SECRET is empty while webhook mode is enabled. "
+                    #"WARNING: TELEGRAM_WEBHOOK_SECRET is empty while webhook mode is enabled. "
+                    "WARNING: TELEGRAM_WEBHOOK_SECRET is empty while Telegram webhook mode is enabled. "
                     "Set TELEGRAM_WEBHOOK_SECRET to validate X-Telegram-Bot-Api-Secret-Token header."
                 )
             if not _settings_instance.YOOKASSA_SHOP_ID or not _settings_instance.YOOKASSA_SECRET_KEY:
